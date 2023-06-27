@@ -9,6 +9,7 @@ class DisplayCube3:
     _thin = 0.1
     _steps = 10
     _renderTime = 0.02
+    _pauseTime = 0.5
     
     # Calculated from parameters
     _smallestAngle = math.pi/2/_steps
@@ -99,6 +100,7 @@ class DisplayCube3:
                 self._boxes[face.value][row][col].pos = rotate(self._boxes[face.value][row][col].pos, angle = self._smallestAngle, axis = axis)
                 self._boxes[face.value][row][col].rotate(angle = self._smallestAngle, axis = axis)
             rotation += self._smallestAngle
+        sleep(self._pauseTime)
         
     def adjustBoxes(self, action):
         # Adjust the _boxes array based on the transformations for the given action

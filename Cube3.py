@@ -74,7 +74,6 @@ class Cube3:
         if self._actions.get(action) != None:
             f = self._actions[action]
             f()
-            sleep(1)
         
     # Static helper function--also used by DisplayCube3
     def getTransformations(action):
@@ -339,7 +338,7 @@ class Cube3:
             self.performAction(Action.FP)
         else:
             # Yellow L
-            while not topFace[0][1] == RubiksColor.YELLOW and topFace[1][0] == RubiksColor.YELLOW:
+            while not (topFace[0][1] == RubiksColor.YELLOW and topFace[1][0] == RubiksColor.YELLOW):
                 self.performAction(Action.U)
                 topFace = self._state[Faces.TOP.value]
             self.performAction(Action.F)
@@ -349,8 +348,151 @@ class Cube3:
             self.performAction(Action.RP)
             self.performAction(Action.FP)
             
-        # 6 Yellow face
+        # Cube is still upside down
+            
+        # 6 Yellow corners on top
+        tempDesiredState = stateDefault()
+        tempDesiredState[Faces.TOP.value][0][0] = RubiksColor.YELLOW
+        tempDesiredState[Faces.TOP.value][0][2] = RubiksColor.YELLOW
+        tempDesiredState[Faces.TOP.value][2][0] = RubiksColor.YELLOW
+        tempDesiredState[Faces.TOP.value][2][2] = RubiksColor.YELLOW
+        desiredState[Faces.BOTTOM.value][0][0] = RubiksColor.YELLOW
+        desiredState[Faces.BOTTOM.value][0][2] = RubiksColor.YELLOW
+        desiredState[Faces.BOTTOM.value][2][0] = RubiksColor.YELLOW
+        desiredState[Faces.BOTTOM.value][2][2] = RubiksColor.YELLOW
         
+        # Loop until complete
+        while not self.isDesiredState(tempDesiredState):
+            # Find how many corners are yellow
+            numberYellowCorners = sum([1 for coords in [(0, 0), (0, 2), (2, 0), (2, 2)] if self._state[Faces.TOP.value][coords[0]][coords[1]] == RubiksColor.YELLOW])
+            if numberYellowCorners == 1:
+                while self._state[Faces.TOP.value][2][0] != RubiksColor.YELLOW:
+                    self.performAction(Action.U)
+            else:
+                while self._state[Faces.FRONT.value][0][0] != RubiksColor.YELLOW:
+                    self.performAction(Action.U)
+            self.performAction(Action.R)
+            self.performAction(Action.U)
+            self.performAction(Action.RP)
+            self.performAction(Action.U)
+            self.performAction(Action.R)
+            self.performAction(Action.U)
+            self.performAction(Action.U)
+            self.performAction(Action.RP)
+            
+        # 7: Yellow corners in place
+        self.orientCube(upsideDown = True)
+        tempDesiredState = stateDefault()
+        tempDesiredState[Faces.FRONT.value][0][0] = RubiksColor.BLUE
+        tempDesiredState[Faces.FRONT.value][0][2] = RubiksColor.BLUE
+        tempDesiredState[Faces.BACK.value][0][0] = RubiksColor.GREEN
+        tempDesiredState[Faces.BACK.value][0][2] = RubiksColor.GREEN
+        tempDesiredState[Faces.BOTTOM.value][0][0] = RubiksColor.WHITE
+        tempDesiredState[Faces.BOTTOM.value][0][2] = RubiksColor.WHITE
+        tempDesiredState[Faces.BOTTOM.value][2][0] = RubiksColor.WHITE
+        tempDesiredState[Faces.BOTTOM.value][2][2] = RubiksColor.WHITE
+        desiredState[Faces.FRONT.value][2][0] = RubiksColor.BLUE
+        desiredState[Faces.FRONT.value][2][2] = RubiksColor.BLUE
+        desiredState[Faces.RIGHT.value][2][0] = RubiksColor.ORANGE
+        desiredState[Faces.RIGHT.value][2][2] = RubiksColor.ORANGE
+        desiredState[Faces.BACK.value][2][0] = RubiksColor.GREEN
+        desiredState[Faces.BACK.value][2][2] = RubiksColor.GREEN
+        desiredState[Faces.LEFT.value][2][0] = RubiksColor.RED
+        desiredState[Faces.LEFT.value][2][2] = RubiksColor.RED
+        
+        if not self.incrementLookahead(1, 2, tempDesiredState):
+            twoYellowCornersCorrect = False
+            for face in [Faces.FRONT, Faces.RIGHT, Faces.BACK, Faces.LEFT]:
+                if self._state[face.value][0][0] == self._state[face.value][0][2]:
+                    twoYellowCornersCorrect = True
+                    break
+            
+            while True:
+                if twoYellowCornersCorrect:
+                    # Position solved on back
+                    while not (self._state[Faces.BACK.value][0][0] == self._state[Faces.BACK.value][0][2]):
+                        self.performAction(Action.U)
+                
+                # Do sequence
+                self.performAction(Action.RP)
+                self.performAction(Action.F)
+                self.performAction(Action.RP)
+                self.performAction(Action.B)
+                self.performAction(Action.B)
+                self.performAction(Action.R)
+                self.performAction(Action.FP)
+                self.performAction(Action.RP)
+                self.performAction(Action.B)
+                self.performAction(Action.B)
+                self.performAction(Action.R)
+                self.performAction(Action.R)
+                
+                if twoYellowCornersCorrect:
+                    break
+                else:
+                    twoYellowCornersCorrect = True
+            
+            self.incrementLookahead(1, 2, tempDesiredState)
+            
+        # 8: Edges in place
+        self.orientCube(upsideDown = True)
+        tempDesiredState = stateDefault()
+        tempDesiredState[Faces.FRONT.value][0][1] = RubiksColor.BLUE
+        tempDesiredState[Faces.RIGHT.value][0][1] = RubiksColor.RED
+        tempDesiredState[Faces.BACK.value][0][1] = RubiksColor.GREEN
+        tempDesiredState[Faces.LEFT.value][0][1] = RubiksColor.ORANGE
+        desiredState[Faces.FRONT.value][2][1] = RubiksColor.BLUE
+        desiredState[Faces.RIGHT.value][2][1] = RubiksColor.ORANGE
+        desiredState[Faces.BACK.value][2][1] = RubiksColor.GREEN
+        desiredState[Faces.LEFT.value][2][1] = RubiksColor.RED
+        
+        if not self.isDesiredState(tempDesiredState):
+            oneYellowEdgeSolved = False
+            for face in [Faces.FRONT, Faces.RIGHT, Faces.BACK, Faces.LEFT]:
+                if self._state[face.value][0][1] == self._state[face.value][0][2]:
+                    oneYellowEdgeSolved = True
+                    break
+                
+            while True:
+                if oneYellowEdgeSolved:
+                    # Rotate until solved on back
+                    while self._state[Faces.BACK.value][0][1] != self._state[Faces.BACK.value][0][2]:
+                        self.performAction(Action.TCW)
+                        
+                # Do sequence
+                if not oneYellowEdgeSolved or self._state[Faces.RIGHT.value][0][1] == self._state[Faces.FRONT.value][0][0]:
+                    self.performAction(Action.F)
+                    self.performAction(Action.F)
+                    self.performAction(Action.U)
+                    self.performAction(Action.RP)
+                    self.performAction(Action.L)
+                    self.performAction(Action.F)
+                    self.performAction(Action.F)
+                    self.performAction(Action.R)
+                    self.performAction(Action.LP)
+                    self.performAction(Action.U)
+                    self.performAction(Action.F)
+                    self.performAction(Action.F)
+                else:
+                    self.performAction(Action.F)
+                    self.performAction(Action.F)
+                    self.performAction(Action.UP)
+                    self.performAction(Action.RP)
+                    self.performAction(Action.L)
+                    self.performAction(Action.F)
+                    self.performAction(Action.F)
+                    self.performAction(Action.R)
+                    self.performAction(Action.LP)
+                    self.performAction(Action.UP)
+                    self.performAction(Action.F)
+                    self.performAction(Action.F)
+                
+                if oneYellowEdgeSolved:
+                    break
+                else:
+                    oneYellowEdgeSolved = True
+            
+            print("Solved!")
             
     # Helper functions for solver
     
