@@ -22,7 +22,11 @@ else:
 stateStr = input().replace(' ', '')
 cube = Cube3(parseCube3State(stateStr))
 display = DisplayCube3(cube)
-cube.solve()
-print("Complete! Enter 'stop' to end program.")
+
+if cube.solve():
+    print("Complete! Enter 'stop' to end program.")
+else:
+    print("Failed to solve. You likely entered an illegal cube setup.")
+    
 while input("") != "stop":
     pass

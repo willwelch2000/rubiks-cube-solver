@@ -1,11 +1,12 @@
 # Definitions of important things
-# Mapping: a dictionary relating a destination point to its origin
-    # orientation[destination coordinates as tuple] = origin coordinates as tuple
-# Transformation: tuple consisting of: (origin face, destination face, list of points (tuples) in destination to change, optional mapping--if not given, inferred)
-    # the mapping can be inferred as long as the origin face and destination face are adjacent faces
-    # if the origin and destination are equal (maybe for a face rotation), then the mapping must be included
-# Point: tuple consisting of: (face, row, col)
-    # If face is known, then it's just a tuple of: (row, col)
+    # Mapping: a dictionary relating a destination point to its origin
+        # orientation[destination coordinates as tuple] = origin coordinates as tuple
+    # Transformation: tuple consisting of: (origin face, destination face, list of points (tuples) in destination to change, optional mapping--if not given, inferred)
+        # the mapping can be inferred as long as the origin face and destination face are adjacent faces
+        # if the origin and destination are equal (maybe for a face rotation), then the mapping must be included
+    # Point: tuple consisting of: (face, row, col)
+        # If face is known, then it's just a tuple of: (row, col)
+    # Action: an Enum consisting of all the actions you can do on a cube
 
 from Cube3Util import *
 from time import *
@@ -26,7 +27,8 @@ class Cube3:
     _state = [[[]]]
     
     # a dictionary mapping an Action Enum to a function pointer
-    _actions = {}
+    # used by display class to add animations
+    _addonFunctions = {}
     
     # a list of moves to solve the cube
     _movesPerformed = []
@@ -37,8 +39,8 @@ class Cube3:
         else:
             self._state = stateCopy(state)
         
-    def setActions(self, actions : dict):
-        self._actions = actions
+    def setAddOns(self, addonFunctions : dict):
+        self._addonFunctions = addonFunctions
     
     def setState(self, state):
         # state should be a Color[3][3][6]
@@ -51,7 +53,7 @@ class Cube3:
     # General function for transforming cube state
     
     def transform(self, transformations):
-        # Performs a given list of transformations
+        # Performs a given list of transformations--changes _state
         
         newState = stateCopy(self._state)
         
@@ -68,11 +70,15 @@ class Cube3:
     # Functions to handle moves
     
     def performAction(self, action):
+        # Get and perform transformations corresponding to an action from Action Enum
+        
         self.transform(Cube3.getTransformations(action))
         self._movesPerformed.append(action)
         
-        if self._actions.get(action) != None:
-            f = self._actions[action]
+        # If an add-on command is available for this action, do it
+        # This allows the display class to attach its animation functions
+        f = self._addonFunctions.get(action)
+        if f != None:
             f()
         
     # Static helper function--also used by DisplayCube3
@@ -267,11 +273,13 @@ class Cube3:
     # Solver function
     
     def solve(self):
+        # Returns true if solved correctly, false if impossible
+        
         self._movesPerformed = []
         desiredState = stateDefault() # Building up state as we go on--starts at all default (no requirements)
         
         # 1: Orient cube
-        self.orientCube(desiredState)
+        self.orientCube(desiredStatePointer = desiredState)
             
         # 2: White cross
         # white/blue edge
@@ -298,25 +306,27 @@ class Cube3:
         self.doWhiteCorner(desiredState, RubiksColor.GREEN, RubiksColor.ORANGE)
         
         # 4: Middle row edges
+        # Flip upside down--desiredState not accurate
+        self.orientCube(upsideDown = True)
+        self.orientState(desiredState, upsideDown = True)
+        
         self.doMiddleEdge(desiredState, RubiksColor.RED, RubiksColor.BLUE)
         self.doMiddleEdge(desiredState, RubiksColor.BLUE, RubiksColor.ORANGE)
         self.doMiddleEdge(desiredState, RubiksColor.ORANGE, RubiksColor.GREEN)
         self.doMiddleEdge(desiredState, RubiksColor.GREEN, RubiksColor.RED)
         
-        # Cube is flipped upside down--desiredState not accurate
+        # Cube is flipped upside down
         
         # 5: Yellow cross
-        tempDesiredState = stateDefault()
-        tempDesiredState[Faces.TOP.value][0][1] = RubiksColor.YELLOW
-        tempDesiredState[Faces.TOP.value][1][0] = RubiksColor.YELLOW
-        tempDesiredState[Faces.TOP.value][1][2] = RubiksColor.YELLOW
-        tempDesiredState[Faces.TOP.value][2][1] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][0][1] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][1][0] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][1][2] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][2][1] = RubiksColor.YELLOW
+        self.orientCube(upsideDown = True)
+        self.orientState(desiredState, upsideDown = True)
+        
+        desiredState[Faces.TOP.value][0][1] = RubiksColor.YELLOW
+        desiredState[Faces.TOP.value][1][0] = RubiksColor.YELLOW
+        desiredState[Faces.TOP.value][1][2] = RubiksColor.YELLOW
+        desiredState[Faces.TOP.value][2][1] = RubiksColor.YELLOW
         topFace = self._state[Faces.TOP.value]
-        if self.isDesiredState(tempDesiredState):
+        if self.isDesiredState(desiredState):
             pass
         elif RubiksColor.YELLOW not in [topFace[0][1], topFace[1][0], topFace[1][2], topFace[2][1]]:
             # No yellow edges
@@ -351,18 +361,16 @@ class Cube3:
         # Cube is still upside down
             
         # 6 Yellow corners on top
-        tempDesiredState = stateDefault()
-        tempDesiredState[Faces.TOP.value][0][0] = RubiksColor.YELLOW
-        tempDesiredState[Faces.TOP.value][0][2] = RubiksColor.YELLOW
-        tempDesiredState[Faces.TOP.value][2][0] = RubiksColor.YELLOW
-        tempDesiredState[Faces.TOP.value][2][2] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][0][0] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][0][2] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][2][0] = RubiksColor.YELLOW
-        desiredState[Faces.BOTTOM.value][2][2] = RubiksColor.YELLOW
+        self.orientCube(upsideDown = True)
+        self.orientState(desiredState, upsideDown = True)
+        
+        desiredState[Faces.TOP.value][0][0] = RubiksColor.YELLOW
+        desiredState[Faces.TOP.value][0][2] = RubiksColor.YELLOW
+        desiredState[Faces.TOP.value][2][0] = RubiksColor.YELLOW
+        desiredState[Faces.TOP.value][2][2] = RubiksColor.YELLOW
         
         # Loop until complete
-        while not self.isDesiredState(tempDesiredState):
+        while not self.isDesiredState(desiredState):
             # Find how many corners are yellow
             numberYellowCorners = sum([1 for coords in [(0, 0), (0, 2), (2, 0), (2, 2)] if self._state[Faces.TOP.value][coords[0]][coords[1]] == RubiksColor.YELLOW])
             if numberYellowCorners == 1:
@@ -382,25 +390,14 @@ class Cube3:
             
         # 7: Yellow corners in place
         self.orientCube(upsideDown = True)
-        tempDesiredState = stateDefault()
-        tempDesiredState[Faces.FRONT.value][0][0] = RubiksColor.BLUE
-        tempDesiredState[Faces.FRONT.value][0][2] = RubiksColor.BLUE
-        tempDesiredState[Faces.BACK.value][0][0] = RubiksColor.GREEN
-        tempDesiredState[Faces.BACK.value][0][2] = RubiksColor.GREEN
-        tempDesiredState[Faces.BOTTOM.value][0][0] = RubiksColor.WHITE
-        tempDesiredState[Faces.BOTTOM.value][0][2] = RubiksColor.WHITE
-        tempDesiredState[Faces.BOTTOM.value][2][0] = RubiksColor.WHITE
-        tempDesiredState[Faces.BOTTOM.value][2][2] = RubiksColor.WHITE
-        desiredState[Faces.FRONT.value][2][0] = RubiksColor.BLUE
-        desiredState[Faces.FRONT.value][2][2] = RubiksColor.BLUE
-        desiredState[Faces.RIGHT.value][2][0] = RubiksColor.ORANGE
-        desiredState[Faces.RIGHT.value][2][2] = RubiksColor.ORANGE
-        desiredState[Faces.BACK.value][2][0] = RubiksColor.GREEN
-        desiredState[Faces.BACK.value][2][2] = RubiksColor.GREEN
-        desiredState[Faces.LEFT.value][2][0] = RubiksColor.RED
-        desiredState[Faces.LEFT.value][2][2] = RubiksColor.RED
+        self.orientState(desiredState, upsideDown = True)
         
-        if not self.incrementLookahead(1, 2, tempDesiredState):
+        desiredState[Faces.FRONT.value][0][0] = RubiksColor.BLUE
+        desiredState[Faces.FRONT.value][0][2] = RubiksColor.BLUE
+        desiredState[Faces.BACK.value][0][0] = RubiksColor.GREEN
+        desiredState[Faces.BACK.value][0][2] = RubiksColor.GREEN
+        
+        if not self.incrementLookahead(1, 2, desiredState):
             twoYellowCornersCorrect = False
             for face in [Faces.FRONT, Faces.RIGHT, Faces.BACK, Faces.LEFT]:
                 if self._state[face.value][0][0] == self._state[face.value][0][2]:
@@ -432,21 +429,17 @@ class Cube3:
                 else:
                     twoYellowCornersCorrect = True
             
-            self.incrementLookahead(1, 2, tempDesiredState)
+            self.incrementLookahead(1, 2, desiredState)
             
         # 8: Edges in place
         self.orientCube(upsideDown = True)
-        tempDesiredState = stateDefault()
-        tempDesiredState[Faces.FRONT.value][0][1] = RubiksColor.BLUE
-        tempDesiredState[Faces.RIGHT.value][0][1] = RubiksColor.RED
-        tempDesiredState[Faces.BACK.value][0][1] = RubiksColor.GREEN
-        tempDesiredState[Faces.LEFT.value][0][1] = RubiksColor.ORANGE
-        desiredState[Faces.FRONT.value][2][1] = RubiksColor.BLUE
-        desiredState[Faces.RIGHT.value][2][1] = RubiksColor.ORANGE
-        desiredState[Faces.BACK.value][2][1] = RubiksColor.GREEN
-        desiredState[Faces.LEFT.value][2][1] = RubiksColor.RED
+        self.orientState(desiredState, upsideDown = True)
+        desiredState[Faces.FRONT.value][0][1] = RubiksColor.BLUE
+        desiredState[Faces.RIGHT.value][0][1] = RubiksColor.RED
+        desiredState[Faces.BACK.value][0][1] = RubiksColor.GREEN
+        desiredState[Faces.LEFT.value][0][1] = RubiksColor.ORANGE
         
-        if not self.isDesiredState(tempDesiredState):
+        if not self.isDesiredState(desiredState):
             oneYellowEdgeSolved = False
             for face in [Faces.FRONT, Faces.RIGHT, Faces.BACK, Faces.LEFT]:
                 if self._state[face.value][0][1] == self._state[face.value][0][2]:
@@ -492,7 +485,13 @@ class Cube3:
                 else:
                     oneYellowEdgeSolved = True
             
-            print("Solved!")
+        # Check to make sure that it's actually solved
+        for face in Faces:
+            if min([self._state[face.value][r][c].value for r in range(3) for c in range(3)]) != self._state[face.value][0][0].value:
+                return False
+            
+        print("Solved!")
+        return True
             
     # Helper functions for solver
     
@@ -560,7 +559,7 @@ class Cube3:
         return None
     
     def isDesiredState(self, desiredState):
-        # Compares ._state to desiredState
+        # Compares _state to desiredState
         # desiredState is formatted just like _state, but DEFAULT means don't-care
         for face in Faces:
             for row in range(3):
@@ -613,14 +612,13 @@ class Cube3:
     
     # Subfunctions for solver
     
-    def orientCube(self, desiredState = None, upsideDown = False):
+    def orientCube(self, desiredStatePointer = None, upsideDown = False):
         # Orients cube with white on top and blue at front if !upsideDown
         # Orients cube with yellow on top and blue at front if upsideDown
         # Optional desiredState pointer argument--if passed, this initializes and edits that array by reference.
         # Otherwise, this just makes its own array
         
-        if desiredState == None:
-            desiredState = stateDefault() # Building up state as we go on--starts at all default (no requirements)
+        desiredState = stateDefault() if (desiredStatePointer == None) else desiredStatePointer
         
         desiredState[Faces.TOP.value][1][1] = RubiksColor.WHITE if not upsideDown else RubiksColor.YELLOW
         desiredState[Faces.FRONT.value][1][1] = RubiksColor.BLUE
@@ -629,6 +627,28 @@ class Cube3:
         desiredState[Faces.LEFT.value][1][1] = RubiksColor.RED if not upsideDown else RubiksColor.ORANGE
         desiredState[Faces.BOTTOM.value][1][1] = RubiksColor.YELLOW if not upsideDown else RubiksColor.WHITE
         self.incrementLookahead(1, 4, desiredState, True)
+    
+    def orientState(self, state, upsideDown = False):
+        # Adjust the pointed-to state array--for when the cube is rotated (performed on desiredState)
+        # Changes the state array itself
+        
+        desiredState = stateDefault()
+        
+        desiredState[Faces.TOP.value][1][1] = RubiksColor.WHITE if not upsideDown else RubiksColor.YELLOW
+        desiredState[Faces.FRONT.value][1][1] = RubiksColor.BLUE
+        desiredState[Faces.RIGHT.value][1][1] = RubiksColor.ORANGE if not upsideDown else RubiksColor.RED
+        desiredState[Faces.BACK.value][1][1] = RubiksColor.GREEN
+        desiredState[Faces.LEFT.value][1][1] = RubiksColor.RED if not upsideDown else RubiksColor.ORANGE
+        desiredState[Faces.BOTTOM.value][1][1] = RubiksColor.YELLOW if not upsideDown else RubiksColor.WHITE
+        
+        cubeCopy = Cube3(state)
+        cubeCopy.incrementLookahead(1, 4, desiredState, True)
+        revisedState = cubeCopy.getState()
+        
+        for face in Faces:
+            for row in range(3):
+                for col in range(3):
+                    state[face.value][row][col] = revisedState[face.value][row][col]
     
     def doWhiteCorner(self, desiredState, color2, color3):
         # Get a white corner into place given 3 colors
@@ -756,23 +776,20 @@ class Cube3:
     
         # Adjust desired state to include edge
         if color1 == RubiksColor.RED and color2 == RubiksColor.BLUE:
-            desiredState[Faces.LEFT.value][1][2] = RubiksColor.RED
-            desiredState[Faces.FRONT.value][1][0] = RubiksColor.BLUE
-        elif color1 == RubiksColor.BLUE and color2 == RubiksColor.ORANGE:
+            desiredState[Faces.RIGHT.value][1][0] = RubiksColor.RED
             desiredState[Faces.FRONT.value][1][2] = RubiksColor.BLUE
-            desiredState[Faces.RIGHT.value][1][0] = RubiksColor.ORANGE
+        elif color1 == RubiksColor.BLUE and color2 == RubiksColor.ORANGE:
+            desiredState[Faces.FRONT.value][1][0] = RubiksColor.BLUE
+            desiredState[Faces.LEFT.value][1][2] = RubiksColor.ORANGE
         elif color1 == RubiksColor.ORANGE and color2 == RubiksColor.GREEN:
-            desiredState[Faces.RIGHT.value][1][2] = RubiksColor.ORANGE
-            desiredState[Faces.BACK.value][1][0] = RubiksColor.GREEN
-        elif color1 == RubiksColor.GREEN and color2 == RubiksColor.RED:
+            desiredState[Faces.LEFT.value][1][0] = RubiksColor.ORANGE
             desiredState[Faces.BACK.value][1][2] = RubiksColor.GREEN
-            desiredState[Faces.LEFT.value][1][0] = RubiksColor.RED
+        elif color1 == RubiksColor.GREEN and color2 == RubiksColor.RED:
+            desiredState[Faces.BACK.value][1][0] = RubiksColor.GREEN
+            desiredState[Faces.RIGHT.value][1][2] = RubiksColor.RED
             
         if self.isDesiredState(desiredState):
             return
-        
-        # Flip upside down
-        self.orientCube(upsideDown = True)
         
         edge = self.findEdge(color1, color2)
         

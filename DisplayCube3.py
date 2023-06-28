@@ -22,7 +22,7 @@ class DisplayCube3:
         self._cube = cube
         self.setDisplay()
         
-        actions = {
+        addOnFunctions = {
             Action.TCW : self.turnClockwise,
             Action.TCCW : self.turnCounterClockwise,
             Action.TF : self.turnForward,
@@ -40,7 +40,7 @@ class DisplayCube3:
             Action.FP : self.moveFP,
             Action.BP : self.moveBP
         }
-        cube.setActions(actions)
+        cube.setAddOns(addOnFunctions)
         
     def setDisplay(self):
         rubiksColorToVector = {
