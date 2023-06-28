@@ -11,3 +11,6 @@ stateStr = stateStrs[3].replace(' ', '')
 cube = Cube3(parseCube3State(stateStr))
 display = DisplayCube3(cube)
 cube.solve()
+print("Complete! Enter 'stop' to end program.")
+while input("") != "stop":
+    pass
