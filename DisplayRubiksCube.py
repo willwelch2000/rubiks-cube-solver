@@ -1,10 +1,10 @@
 from vpython import *
 from time import *
-from Cube3Util import *
-from Cube3 import *
+from RubiksCubeUtil import *
+from RubiksCube import *
 import math
 
-class DisplayCube3:
+class DisplayRubiksCube:
     # Parameters
     _thin = 0.1
     _steps = 10
@@ -58,7 +58,7 @@ class DisplayCube3:
             for row in range(3):
                 for col in range(3):
                     square = state[face.value][row][col]
-                    (length, height, width, x, y, z) = DisplayCube3.getDisplaySpecs(face, row, col)
+                    (length, height, width, x, y, z) = DisplayRubiksCube.getDisplaySpecs(face, row, col)
                     if (self._boxes[face.value][row][col] == None):
                         self._boxes[face.value][row][col] = box(color = rubiksColorToVector[square], length = length, height = height, width = width, pos = vector(x, y, z))
                     else:
@@ -75,17 +75,17 @@ class DisplayCube3:
         # Given cube coordinates, returns tuple consisting of: (length, height, width, x, y, z)
         
         if face == Faces.TOP:
-            return (1, 1, DisplayCube3._thin, col - 1, -(row - 1), 1.5)
+            return (1, 1, DisplayRubiksCube._thin, col - 1, -(row - 1), 1.5)
         if face == Faces.FRONT:
-            return (1, DisplayCube3._thin, 1, col - 1, -1.5, -(row - 1))
+            return (1, DisplayRubiksCube._thin, 1, col - 1, -1.5, -(row - 1))
         if face == Faces.RIGHT:
-            return (DisplayCube3._thin, 1, 1, 1.5, col - 1, -(row - 1))
+            return (DisplayRubiksCube._thin, 1, 1, 1.5, col - 1, -(row - 1))
         if face == Faces.BACK:
-            return (1, DisplayCube3._thin, 1, -(col - 1), 1.5, -(row - 1))
+            return (1, DisplayRubiksCube._thin, 1, -(col - 1), 1.5, -(row - 1))
         if face == Faces.LEFT:
-            return (DisplayCube3._thin, 1, 1, -1.5, -(col - 1), -(row - 1))
+            return (DisplayRubiksCube._thin, 1, 1, -1.5, -(col - 1), -(row - 1))
         if face == Faces.BOTTOM:
-            return (1, 1, DisplayCube3._thin, col - 1, (row - 1), -1.5)
+            return (1, 1, DisplayRubiksCube._thin, col - 1, (row - 1), -1.5)
         
         
     # General functions for animation, adjusting boxes array
@@ -104,7 +104,7 @@ class DisplayCube3:
         
     def adjustBoxes(self, action):
         # Adjust the _boxes array based on the transformations for the given action
-        transformations = Cube3.getTransformations(action)
+        transformations = RubiksCube.getTransformations(action)
         newBoxes = stateCopy(self._boxes)
         
         for origin, destination, points, mapping in transformations:

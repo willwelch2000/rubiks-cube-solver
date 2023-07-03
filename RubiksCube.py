@@ -8,10 +8,10 @@
         # If face is known, then it's just a tuple of: (row, col)
     # Action: an Enum consisting of all the actions you can do on a cube
 
-from Cube3Util import *
+from RubiksCubeUtil import *
 from time import *
 
-class Cube3:
+class RubiksCube:
     
     '''
     State variable defines all the colors on the cube.
@@ -72,7 +72,7 @@ class Cube3:
     def performAction(self, action):
         # Get and perform transformations corresponding to an action from Action Enum
         
-        self.transform(Cube3.getTransformations(action))
+        self.transform(RubiksCube.getTransformations(action))
         self._movesPerformed.append(action)
         
         # If an add-on command is available for this action, do it
@@ -81,7 +81,7 @@ class Cube3:
         if f != None:
             f()
         
-    # Static helper function--also used by DisplayCube3
+    # Static helper function--also used by DisplayRubiksCube
     def getTransformations(action):
         # Given action from Actions Enum, returns list of transformations
         
@@ -289,15 +289,36 @@ class Cube3:
         # white/orange edge
         desiredState[Faces.TOP.value][1][2] = RubiksColor.WHITE
         desiredState[Faces.RIGHT.value][0][1] = RubiksColor.ORANGE
-        self.incrementLookahead(1, 4, desiredState)
+        if not self.incrementLookahead(1, 4, desiredState):
+            tempDesiredState = stateCopy(desiredState)
+            tempDesiredState[Faces.TOP.value][1][2] = RubiksColor.DEFAULT
+            tempDesiredState[Faces.RIGHT.value][0][1] = RubiksColor.DEFAULT
+            tempDesiredState[Faces.BOTTOM.value][1][2] = RubiksColor.WHITE
+            tempDesiredState[Faces.RIGHT.value][2][1] = RubiksColor.ORANGE
+            self.incrementLookahead(1, 4, tempDesiredState)
+            self.incrementLookahead(1, 4, desiredState)
         # white/green edge
         desiredState[Faces.TOP.value][0][1] = RubiksColor.WHITE
         desiredState[Faces.BACK.value][0][1] = RubiksColor.GREEN
-        self.incrementLookahead(1, 4, desiredState)
+        if not self.incrementLookahead(1, 4, desiredState):
+            tempDesiredState = stateCopy(desiredState)
+            tempDesiredState[Faces.TOP.value][0][1] = RubiksColor.DEFAULT
+            tempDesiredState[Faces.BACK.value][0][1] = RubiksColor.DEFAULT
+            tempDesiredState[Faces.BOTTOM.value][2][1] = RubiksColor.WHITE
+            tempDesiredState[Faces.BACK.value][2][1] = RubiksColor.GREEN
+            self.incrementLookahead(1, 4, tempDesiredState)
+            self.incrementLookahead(1, 4, desiredState)
         # white/red edge
         desiredState[Faces.TOP.value][1][0] = RubiksColor.WHITE
         desiredState[Faces.LEFT.value][0][1] = RubiksColor.RED
-        self.incrementLookahead(1, 4, desiredState)
+        if not self.incrementLookahead(1, 4, desiredState):
+            tempDesiredState = stateCopy(desiredState)
+            tempDesiredState[Faces.TOP.value][1][0] = RubiksColor.DEFAULT
+            tempDesiredState[Faces.LEFT.value][0][1] = RubiksColor.DEFAULT
+            tempDesiredState[Faces.BOTTOM.value][1][0] = RubiksColor.WHITE
+            tempDesiredState[Faces.LEFT.value][2][1] = RubiksColor.RED
+            self.incrementLookahead(1, 4, tempDesiredState)
+            self.incrementLookahead(1, 4, desiredState)
         
         # 3: White face
         self.doWhiteCorner(desiredState, RubiksColor.BLUE, RubiksColor.RED)
@@ -583,7 +604,7 @@ class Cube3:
         for action in Action:
             if (not includeTurns) and action in [Action.TCW, Action.TCCW, Action.TF, Action.TB]:
                 continue
-            cubeCopy = Cube3(self._state)
+            cubeCopy = RubiksCube(self._state)
             moves = []
             moves.extend(movesMade)
             moves.append(action)
@@ -641,7 +662,7 @@ class Cube3:
         desiredState[Faces.LEFT.value][1][1] = RubiksColor.RED if not upsideDown else RubiksColor.ORANGE
         desiredState[Faces.BOTTOM.value][1][1] = RubiksColor.YELLOW if not upsideDown else RubiksColor.WHITE
         
-        cubeCopy = Cube3(state)
+        cubeCopy = RubiksCube(state)
         cubeCopy.incrementLookahead(1, 4, desiredState, True)
         revisedState = cubeCopy.getState()
         

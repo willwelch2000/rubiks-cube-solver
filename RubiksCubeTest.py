@@ -1,15 +1,16 @@
-from DisplayCube3 import *
-from Cube3 import *
-from Cube3Util import *
+from DisplayRubiksCube import *
+from RubiksCube import *
+from RubiksCubeUtil import *
 
 stateStrs = []
 stateStrs.append("rbwyywogr yryorygyg bgbogoybw orwwowgyb grbrbbrgy rboowwwgo")
 stateStrs.append("wbwrwrygr goyygywwg bbrbrbywy bobwbybrg owrgoowro googygryo")
 stateStrs.append("ywygrwrww wbogwbwbg ggrrgbwgo gobyyryog robybryrb oorwoyoyb")
 stateStrs.append("ygrrywyoo bwwgbwyrg bgbrrywbr wyrogrboo gbogoowyg oyrbwwgby")
-stateStr = stateStrs[3].replace(' ', '')
-cube = Cube3(parseCube3State(stateStr))
-display = DisplayCube3(cube)
+stateStrs.append("oyryowboy obgrworyo ogbwbwwrr wrwbyyboy bbyggbggw gogrrwrgy")
+stateStr = stateStrs[0].replace(' ', '')
+cube = RubiksCube(parseRubiksCubeState(stateStr))
+display = DisplayRubiksCube(cube)
 cube.solve()
 print("Complete! Enter 'stop' to end program.")
 while input("") != "stop":

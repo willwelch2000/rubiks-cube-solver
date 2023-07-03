@@ -1,6 +1,6 @@
-from DisplayCube3 import *
-from Cube3 import *
-from Cube3Util import *
+from DisplayRubiksCube import *
+from RubiksCube import *
+from RubiksCubeUtil import *
 
 needExplanationString = "Do you need an explanation? (y/n)\n"
 needExplanation = input(needExplanationString).lower() in ['y', 'yes']
@@ -12,16 +12,15 @@ explanation = '''Enter the state of the Rubik's Cube in the following format:
     For each face, enter nine characters representing the colors of the squares on the face (r, g, b, w, y, o)
         Go in the order: top row, middle row, bottom row
         
-    White space is allowed anywhere to make more readable
-'''
+    White space is allowed anywhere to make more readable'''
 if needExplanation:
     print(explanation)
 else:
-    print("Enter the state:\n")
+    print("Enter the state:")
 
 stateStr = input().replace(' ', '')
-cube = Cube3(parseCube3State(stateStr))
-display = DisplayCube3(cube)
+cube = RubiksCube(parseRubiksCubeState(stateStr))
+display = DisplayRubiksCube(cube)
 
 if cube.solve():
     print("Complete! Enter 'stop' to end program.")

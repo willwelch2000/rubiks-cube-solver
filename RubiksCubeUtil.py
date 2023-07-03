@@ -160,7 +160,7 @@ def getPointsInCol(col):
 def getAllPoints():
     return [(row, col) for row in range(3) for col in range(3)]
 
-def parseCube3State(stateStr):
+def parseRubiksCubeState(stateStr):
     ''' Creates and returns a state object, given the state as a string
         The string must be formatted in this order:
             Face order: TOP, FRONT, RIGHT, BACK, LEFT, BOTTOM
